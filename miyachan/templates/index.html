@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+{% block modal %}
+<div class="modal fade" id="calc_modal" tabindex="-1" aria-labelledby="calc_modal_label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">金額計算</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid" id="calc_panel">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="container-fluid">
+                    <button type="button" id="row_add" class="btn btn-outline-primary">行追加</button>
+                    <button type="button" id="calc_execute" class="btn btn-primary float-end">計算実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block body %}
+<form action="{{ url_for('add_pay') }}" method="post">
+    <div class="form-group">
+        <label for="Date" class="form-label">日付</label>
+        <input type="date" class="form-control" name="pay_date" id="Date" value="{{ today }}" required="required">
+        <label for="PayKbn" class="form-label">支払手段</label>
+        <select class="form-select" name="pay_kbn" id="PayKbn" required="required">
+            {% for key,value in paykbns.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="Store" class="form-label">お店</label>
+        <select class="form-select" name="store" id="Store" required="required">
+            {% for key,value in stores.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="User" class="form-label">購入者</label>
+        <select class="form-select" name="user" id="User" required="required">
+            {% for key,value in users.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="Money" class="form-label">金額</label>
+        <input type="number" class="form-control" name="money" id="Money" required="required" maxlength="6">
+    </div>
+    <div id="submit_panel" class="mt-2">
+        <div class="btn-group">
+            <button type="button" id="calc_add" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#calc_modal">計算</button>
+        </div>
+        <div class="float-end">
+            <button type="submit" class="btn btn-primary">登録</button>
+        </div>
+    </div>
+</form>
+<script type="text/javascript">
+$(function(){
+    $('select[name="pay_kbn"]').val('999');
+    $('select[name="store"]').val('999');
+    $('select[name="user"]').val('999');
+    
+    const calc_html = `<div class="row mt-2 calc_row">
+        <div class="col">
+            <input type="number" class="form-control" name="price" placeholder="税抜き価格">
+        </div>
+        <div class="col-3">
+            <select class="form-select" name="rate">
+                <option value="8">8%</option>
+                <option value="10">10%</option>
+            </select>
+        </div>
+    </div>`;
+    
+    $("#calc_add").click(function(){
+        $("#calc_panel").html("");
+        for(let i=0; i<5; i++){
+            $("#calc_panel").append(calc_html);
+        }
+    });
+    
+    $("#row_add").click(function(){
+        $("#calc_panel").append(calc_html);
+    });
+    
+    const calc_modal = new bootstrap.Modal(document.getElementById("calc_modal"),{
+        keyboard: false
+    });
+    let calc_flg = false;
+    $("#calc_execute").click(function(){
+        if(!calc_flg){        
+            calc_flg = true;
+            let post_data = [];
+            $(".calc_row").each(function(index, element){
+                const push_data = {
+                    price: Number($(element).find("input[name='price']").val()),
+                    rate: $(element).find("select[name='rate']").val()
+                };
+                post_data.push(push_data);
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('api_calc') }}",
+                timeout: 10000,
+                cache: false,
+                data: JSON.stringify(post_data),
+                dataType: "json",
+                contentType: "application/json"
+            }).done(function(response, textStatus, jqXHR){
+                const money = Number($("#Money").val()) + Number(response.total);
+                $("#Money").val(money);
+            }).fail(function(jqXHR, textStatus, errorThrown){
+                alert("計算処理でエラーが発生しました。");
+            }).always(function(data_or_jqXHR, textStatus, jqXHR_or_errorThrown){
+                calc_flg = false;
+                calc_modal.hide();
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

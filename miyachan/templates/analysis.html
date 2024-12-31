@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="mt-2">
+    <h4>{{month_start.year}}年{{month_start.month}}月</h4>
+</div>
+<div class="mt-1 btn-group">
+    <a class="btn btn-outline-primary" role="button" href="{{ url_for('analysis', year=one_month_ago.year, month=one_month_ago.month) }}">先月</a>
+    <a class="btn btn-outline-primary" role="button" href="{{ url_for('analysis', year=one_month_after.year, month=one_month_after.month) }}">来月</a>
+</div>
+<div>
+    <h5>購入者別割合</h5>
+</div>
+<canvas class="my-4 w-100 chartjs-render-monitor" id="userChart" width="1296" height="649" style="display: block; width: 1296px; height: 649px;"></canvas>
+<div>
+    <h5>購入額上位5店舗</h5>
+</div>
+<canvas class="my-4 w-100 chartjs-render-monitor" id="storeChart" width="1296" height="649" style="display: block; width: 1296px; height: 649px;"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1/dist/chart.min.js"></script>
+<script type="text/javascript">
+$(function(){
+    
+	var ctx_user = $("#userChart");
+	var userChart = new Chart(ctx_user, {
+    	type: 'doughnut',
+    	data: {
+        	labels: {{ user_label | safe }},
+        	datasets: [{
+            	data: {{ user_data }},
+            	backgroundColor: ["#ff6347", "#ffa500", "#ffd700", "#3cb371"],
+            	hoverOffset: 0
+        	}]
+    	}
+	});
+	
+	var ctx_store = $("#storeChart");
+	var storeChart = new Chart(ctx_store, {
+    	type: 'bar',
+    	data: {
+        	labels: {{ store_label | safe }},
+        	datasets: [{
+            	data: {{ store_data }},
+            	backgroundColor: "#87ceeb"
+        	}],
+    	},
+    	options: {
+        	plugins: {
+            	legend: {
+                	display: false
+            	}
+        	}
+    	}
+	});
+	
+});
+</script>
+{% endblock %}

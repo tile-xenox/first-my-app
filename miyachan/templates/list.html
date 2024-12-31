@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="mt-2">
+    <h4>{{month_start.year}}年{{month_start.month}}月：1人あたり：{{ '{:,.2f}'.format(avg) }}円</h4>
+</div>
+<div class="mt-1 btn-group">
+    <a class="btn btn-outline-primary" role="button" href="{{ url_for('ichiranSelectMonth', year=one_month_ago.year, month=one_month_ago.month) }}">先月</a>
+    <a class="btn btn-outline-primary" role="button" href="{{ url_for('ichiranSelectMonth', year=one_month_after.year, month=one_month_after.month) }}">来月</a>
+</div>
+<canvas class="my-4 w-100 chartjs-render-monitor" id="kakeiboChart" width="1296" height="649" style="display: block; width: 1296px; height: 649px;"></canvas>
+<form id="list_form" action="{{ url_for('edit_pay') }}" method="post">
+    <div class="form-group">
+        <div class="row">
+            <div class="col">
+                <label for="SearchDate" class="form-label">日付</label>
+                <input type="number" class="form-control" name="search_date" id="SearchDate" min="1" max="31">
+            </div>
+            <div class="col">
+                <label for="SearchUser" class="form-label">購入者</label>
+                <select class="form-select" name="search_user" id="SearchUser">
+                    <option value="0"></option>
+                    {% for key,value in users.items() %}
+                    <option value="{{ key }}">{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="mt-2 btn-group float-end">
+                    <button type="button" class="btn btn-primary" id="searchButton">検索</button>
+                    <button type="button" class="btn btn-secondary" id="searchClear">クリア</button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col" class="text-nowrap table-sort" data-id="0" data-sort="asc">日付</th>
+                                <th scope="col" class="text-nowrap table-sort" data-id="1" data-sort="asc">購入者</th>
+                                <th scope="col" class="text-nowrap table-sort" data-id="2" data-sort="asc">お店</th>
+                                <th scope="col" class="text-nowrap table-sort" data-id="3" data-sort="asc">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in pays %}
+                                {% if pay.paydate >= month_start %}
+                            <tr>
+                                <th scope="row">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="pay_id" value="{{pay.id }}" required="required">
+                                    </div>
+                                </th>
+                                <td class="text-nowrap" data-number="{{ pay.paydate.day }}">{{ pay.getDate() }}</td>
+                                <td class="text-nowrap" data-number="{{ pay.payer }}">{{ pay.getUser() }}</td>
+                                <td class="text-nowrap" data-number="{{ pay.store }}">{{ pay.getStore() }}</td>
+                                <td class="text-nowrap" data-number="{{ pay.money }}">{{ pay.getMoney() }}</td>
+                            </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1/dist/chart.min.js"></script>
+<script type="text/javascript">
+$(function(){
+	const ctx = $("#kakeiboChart");
+	const kakeiboChart = new Chart(ctx, {
+		data: {
+			datasets: [{
+                type: "line",
+                label: "今月",
+				data: {{ data }},
+                tension: 0,
+                backgroundColor: 'transparent',
+                borderColor: '#00bfff',
+                borderWidth: 2,
+                pointBackgroundColor: '#00bfff'
+			}, {
+                type: "line",
+                label: "先月",
+				data: {{ data_before }},
+                tension: 0,
+                backgroundColor: 'transparent',
+                borderColor: '#8fbc8f',
+                borderWidth: 2,
+                pointBackgroundColor: '#8fbc8f'
+			}],
+            labels: ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31"]
+		},
+		options: {
+    		elements: {
+        		point: {
+            		radius: 1
+        		}
+    		}
+		}
+	});
+    
+    $("tbody").on("click", "tr", function(){
+        const index = $("tbody > tr").index(this);
+        if($("input[name='pay_id']").eq(index).prop("checked")){
+            $("#list_form").submit();
+        }else{
+            $("input[name='pay_id']").eq(index).prop("checked", true);
+        }
+    });
+    
+    $(".table-sort").click(function(){
+        const ele_index = $(this).data("id");
+        const sort_flg = $(this).data("sort");
+        if(sort_flg == "asc"){
+            $(this).data("sort", "desc");
+        }else{
+            $(this).data("sort", "asc");
+        }
+        
+        const sorted_arr = $("tbody > tr").sort(function(first, seccond){
+            const first_num = Number($(first).find("td").eq(ele_index).data("number"));
+            const seccond_num = Number($(seccond).find("td").eq(ele_index).data("number"));
+            
+            if(sort_flg == "asc"){
+                return first_num - seccond_num;
+            }else{
+                return seccond_num - first_num;
+            }
+        });
+        
+        $("tbody").html(sorted_arr);
+    });
+    
+    $("#searchButton").click(function(){
+        $("tbody > tr").each(function(index, elem){
+            $(elem).show();
+        });
+        const search_date = $("#SearchDate").val();
+        const search_user = $("#SearchUser").val();
+        if(search_date != 0){
+            $("tbody > tr").each(function(index, elem){
+                const date = $(elem).find("td").eq(0).data("number");
+                if(search_date != date){
+                    $(elem).hide();
+                }
+            });
+        }
+        if(search_user != 0){
+            $("tbody > tr").each(function(index, elem){
+                const user = $(elem).find("td").eq(1).data("number");
+                if(search_user != user){
+                    $(elem).hide();
+                }
+            });
+        }
+    });
+    $("#searchClear").click(function(){
+        $("#SearchDate").val("");
+        $("#SearchUser").val("0");
+        $("tbody > tr").each(function(index, elem){
+            $(elem).show();
+        });
+    });
+});
+</script>
+{% endblock %}

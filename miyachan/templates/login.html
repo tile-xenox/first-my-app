@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block body %}
+<form action="{{ url_for('login') }}" id="login_form" method="post">
+    <div class="form-group">
+        <input type="hidden" name="hidden_id" id="hiddenID" value="{{ challeId }}">
+        <label for="inputID" class="form-label">ID</label>
+        <input type="text" class="form-control" name="input_id" id="inputID" maxlength="512">
+        <input type="hidden" name="hidden_pass" id="hiddenPW" value="{{ challePW }}">
+        <label for="inputPW" class="form-label">PW</label>
+        <input type="password" class="form-control" name="input_pass" id="inputPW" maxlength="512">
+    </div>
+    <div class="mt-2 text-end">
+        <button type="sibmit" class="btn btn-primary">ログイン</button>
+    </div>
+</form>
+<script src="{{ url_for('static', filename='jsSHA/dist/sha.js') }}" type="text/javascript"></script>
+<script type="text/javascript">
+$(function(){
+    $("#login_form").submit(function(){
+        var resp_id = $("#hiddenID").val() + $("#inputID").val();
+        var resp_pw = $("#hiddenPW").val() + $("#inputPW").val();
+        const shaID = new jsSHA("SHA-512", "TEXT", { encoding: "UTF8" });
+        shaID.update(resp_id);
+        $("#hiddenID").val(shaID.getHash("HEX"));
+        $("#inputID").val("");
+        const shaPW = new jsSHA("SHA-512", "TEXT", { encoding: "UTF8" });
+        shaPW.update(resp_pw);
+        $("#hiddenPW").val(shaPW.getHash("HEX"));
+        $("#inputPW").val("");
+    });
+});
+</script>
+{% endblock %}

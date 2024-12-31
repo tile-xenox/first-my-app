@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block body %}
+<form action="{{ url_for('update_pay', id=pay.id) }}" method="post">
+    <div class="form-group">
+        <label for="Date" class="form-label">日付</label>
+        <input type="date" class="form-control" name="pay_date" id="Date" value="{{ pay.paydate }}" required="required">
+        <label for="PayKbn" class="form-label">支払手段</label>
+        <select class="form-select" name="pay_kbn" id="PayKbn" required="required">
+            {% for key,value in paykbns.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="Store" class="form-label">お店</label>
+        <select class="form-select" name="store" id="Store" required="required">
+            {% for key,value in stores.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="User" class="form-label">購入者</label>
+        <select class="form-select" name="user" id="User" required="required">
+            {% for key,value in users.items() %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+        </select>
+        <label for="Money" class="form-label">金額</label>
+        <input type="number" class="form-control" name="money" id="Money" required="required" value="{{ pay.getMoneyNoneComma() }}">
+    </div>
+    <div class="mt-2 btn-group float-end">
+        <button type="sibmit" class="btn btn-primary">更新</button>
+        <a class="btn btn-secondary" role="button" href="{{ url_for('delete_pay', id=pay.id) }}">削除</a>
+    </div>
+</form>
+<script type="text/javascript">
+$(function(){
+    $('select[name="pay_kbn"]').val('{{ pay.paykbn }}');
+    $('select[name="store"]').val('{{ pay.store }}');
+    $('select[name="user"]').val('{{ pay.payer }}');
+});
+</script>
+{% endblock %}
